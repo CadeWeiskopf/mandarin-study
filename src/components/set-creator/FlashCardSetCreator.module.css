@@ -1,0 +1,7 @@
+.radioInput {
+  transition: 750ms;
+  color: grey;
+}
+.radioInput:has([type="radio"]:checked) {
+  color: black;
+}
