@@ -5,12 +5,12 @@ export type TFlashCard = {
     lang: "zh-CN";
     text: string;
     pinyin: string;
-    utterance: SpeechSynthesisUtterance;
+    utterance: SpeechSynthesisUtterance | null;
   };
   translated: {
     lang: "en-GB";
     text: string;
-    utterance: SpeechSynthesisUtterance;
+    utterance: SpeechSynthesisUtterance | null;
   };
 };
 
@@ -31,7 +31,9 @@ export const FlashCard: React.FC<TFlashCard> = ({
     >
       <button
         onClick={() => {
-          window.speechSynthesis.speak(current.utterance);
+          if (current.utterance) {
+            window.speechSynthesis.speak(current.utterance);
+          }
         }}
       >
         Hear

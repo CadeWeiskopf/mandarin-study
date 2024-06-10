@@ -1,54 +1,58 @@
 import pinyin from "pinyin";
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
 import { TFlashCard } from "../flashcard/FlashCard";
 import styles from "./FlashCardSetCreator.module.css";
+import { AppContext, TFlashCardSet } from "../../context";
 
-type TFlashCardSetCreator = {
-  flashCards: TFlashCard[];
-  setFlashCards: React.Dispatch<React.SetStateAction<TFlashCard[]>>;
-};
-export const FlashCardSetCreator: React.FC<TFlashCardSetCreator> = ({
-  flashCards,
-  setFlashCards,
-}) => {
+export const FlashCardSetCreator: React.FC = () => {
   const [hanzi, setHanzi] = useState("");
+  const [flashCards, setFlashCards] = useState<TFlashCard[]>([]);
   const pinyinText: (string | null)[] = [];
   const translationRef = useRef<HTMLTextAreaElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const { worker } = useContext(AppContext);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNewFlashCardSubmit = (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
-    console.log("+======", pinyinText);
-
-    const utteranceCn = new SpeechSynthesisUtterance(hanzi);
-    utteranceCn.lang = "zh-CN";
-    const utteranceEn = new SpeechSynthesisUtterance(
-      translationRef.current!.value
-    );
-    utteranceEn.lang = "en-GB";
-
     setFlashCards((prevFlashCards) => [
       ...prevFlashCards,
       {
         untranslated: {
-          lang: utteranceCn.lang as "zh-CN",
+          lang: "zh-CN",
           text: hanzi,
           pinyin: pinyinText.join(""),
-          utterance: utteranceCn,
+          utterance: null,
         },
         translated: {
-          lang: utteranceEn.lang as "en-GB",
+          lang: "en-GB",
           text: translationRef.current!.value,
-          utterance: utteranceEn,
+          utterance: null,
         },
       },
     ]);
   };
 
+  const handleCreateNewSet = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (flashCards.length <= 0) {
+      alert("please create at least one flashcard for the set");
+      return;
+    }
+    const newSet: TFlashCardSet = {
+      id: crypto.randomUUID(),
+      name: nameRef.current!.value.trim(),
+      flashCards,
+    };
+    worker.port.postMessage(newSet);
+  };
+
   return (
     <div>
-      <h2>build a set</h2>
+      <h2>build a new set</h2>
       <h3>total {flashCards.length}</h3>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleNewFlashCardSubmit}>
         <div>
           <label htmlFor="hanzi">汉字：</label>
           <textarea
@@ -73,7 +77,6 @@ export const FlashCardSetCreator: React.FC<TFlashCardSetCreator> = ({
               } else {
                 pinyinText[i] = null;
               }
-              console.log(hanziChar, "=>", hanziCharPinYinOptions);
               return (
                 <div
                   key={hanziCellKey}
@@ -141,6 +144,17 @@ export const FlashCardSetCreator: React.FC<TFlashCardSetCreator> = ({
         <div>
           <button>add to set</button>
         </div>
+      </form>
+      <form onSubmit={handleCreateNewSet}>
+        <div>
+          <label htmlFor="newsetname">Name of Set</label>
+          <input
+            id="newsetname"
+            required
+            ref={nameRef}
+          />
+        </div>
+        <button>Create new set</button>
       </form>
     </div>
   );
